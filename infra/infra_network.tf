@@ -1,14 +1,4 @@
-data "azurerm_subscription" "current" {}
 
-resource "random_string" "naming" {
-  special = false
-  upper   = false
-  length  = 6
-}
-
-data "external" "me" {
-  program = ["az", "account", "show", "--query", "user"]
-}
 
 resource "azurerm_virtual_network" "workload_vnet" {
   name                = "${local.prefix}"
@@ -89,15 +79,15 @@ resource "azurerm_subnet_network_security_group_association" "nsg_function_apps"
   network_security_group_id = azurerm_network_security_group.compute_nsg.id
 }
 
-resource "azurerm_private_dns_zone" "blob" {
+resource "azurerm_private_dns_zone" "storage_blob" {
   name                = "privatelink.blob.core.windows.net"
   resource_group_name = azurerm_resource_group.shared_rg.name
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "blob_dbs_zone_link" {
+resource "azurerm_private_dns_zone_virtual_network_link" "storage_blob_dns_zone_link" {
   name                  = "${local.prefix}-blob-dns-link"
   resource_group_name   = azurerm_resource_group.shared_rg.name
-  private_dns_zone_name = azurerm_private_dns_zone.blob.name
+  private_dns_zone_name = azurerm_private_dns_zone.storage_blob.name
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 

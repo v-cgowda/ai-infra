@@ -27,7 +27,7 @@ resource "azurerm_key_vault_secret" "invoiceapi_secret_akv" {
 // Storage Account and Function App
 
 resource "azurerm_storage_account" "func_storage" {
-  name                     = "${local.prefix}funcstorage"
+  name                     = "${local.identifier}funcstorage"
   resource_group_name      = azurerm_resource_group.shared_rg.name
   location                 = azurerm_resource_group.shared_rg.location
   account_tier             = "Standard"
@@ -42,6 +42,7 @@ resource "azurerm_private_endpoint" "func_storage_pe" {
   location            = azurerm_resource_group.shared_rg.location
   resource_group_name = azurerm_resource_group.shared_rg.name
   subnet_id           = azurerm_subnet.services.id
+  depends_on = [ azurerm_private_dns_zone_virtual_network_link.storage_blob_dns_zone_link ]
 
   private_service_connection {
     name                           = "${local.prefix}-func-storage-psc"
@@ -55,14 +56,12 @@ resource "azurerm_private_endpoint" "func_storage_pe" {
 
 // Function App
 
-resource "azurerm_app_service_plan" "function_app_plan" {
+resource "azurerm_service_plan" "function_app_plan" {
   name                = "mcp-function-app-service-plan"
   resource_group_name = azurerm_resource_group.shared_rg.name
   location            = azurerm_resource_group.shared_rg.location
-  sku {
-    tier = "Standard"
-    size = "S1"
-  }
+  os_type             = "Linux"
+  sku_name            = "S1"
 }
 
 resource "azurerm_linux_function_app" "function_app" {
@@ -71,7 +70,7 @@ resource "azurerm_linux_function_app" "function_app" {
   location            = azurerm_resource_group.shared_rg.location
   storage_account_name       = azurerm_storage_account.func_storage.name
   storage_account_access_key = azurerm_storage_account.func_storage.primary_access_key
-  service_plan_id            = azurerm_app_service_plan.function_app_plan.id
+  service_plan_id            = azurerm_service_plan.function_app_plan.id
 
   site_config {}
 }
