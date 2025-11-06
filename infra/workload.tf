@@ -93,6 +93,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg_container_apps
 
 // DNS Zones for Private Endpoints
 
+// Private DNS zone for Storage Account Blob service
 resource "azurerm_private_dns_zone" "storage_blob" {
   name                = "privatelink.blob.core.windows.net"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -104,6 +105,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "storage_blob_dns_zone_
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 
+// Private DNS zone for Container Registry
 resource "azurerm_private_dns_zone" "container_registry" {
   name                = "privatelink.azurecr.io"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -115,6 +117,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "container_registry_dns
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 
+// Private DNS zone for Key Vault
 resource "azurerm_private_dns_zone" "keyvault" {
   name                = "privatelink.vaultcore.azure.net"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -126,6 +129,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "keyvault_dns_zone_link
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 
+// Private DNS zone for Function Apps
 resource "azurerm_private_dns_zone" "functions" {
   name                = "privatelink.azurewebsites.net"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -137,6 +141,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "functions_dns_zone_lin
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 
+// Private DNS zone for Container Apps
 resource "azurerm_private_dns_zone" "container_app" {
   name                = "privatelink.${var.region}.containerapps.azure.io"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -148,6 +153,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "container_app_dns_zone
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 
+// Private DNS zone for Cosmos DB
 resource "azurerm_private_dns_zone" "cosmos_db" {
   name                = "privatelink.documents.azure.com"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -156,6 +162,18 @@ resource "azurerm_private_dns_zone_virtual_network_link" "cosmos_db_dns_zone_lin
   name                  = "${local.prefix}-cosmosdb-dns-link"
   resource_group_name   = azurerm_resource_group.shared_rg.name
   private_dns_zone_name = azurerm_private_dns_zone.cosmos_db.name
+  virtual_network_id    = azurerm_virtual_network.workload_vnet.id
+}
+
+// Private DNS zone for Cognitive Services (Document Intelligence, AI Foundry, etc.)
+resource "azurerm_private_dns_zone" "cognitive_services" {
+  name                = "privatelink.cognitiveservices.azure.com"
+  resource_group_name = azurerm_resource_group.shared_rg.name
+}
+resource "azurerm_private_dns_zone_virtual_network_link" "cognitive_services_dns_zone_link" {
+  name                  = "${local.prefix}-cognitiveservices-dns-link"
+  resource_group_name   = azurerm_resource_group.shared_rg.name
+  private_dns_zone_name = azurerm_private_dns_zone.cognitive_services.name
   virtual_network_id    = azurerm_virtual_network.workload_vnet.id
 }
 
@@ -173,6 +191,13 @@ resource "azurerm_user_assigned_identity" "invoiceapi_identity" {
 // This is the identity to be used by the function app to access other resources
 resource "azurerm_user_assigned_identity" "func_mcp_identity" {
   name                = "${local.prefix}-funcapp-identity"
+  resource_group_name = azurerm_resource_group.shared_rg.name
+  location            = azurerm_resource_group.shared_rg.location
+}
+
+// container app user assigned identity for pulling container images
+resource "azurerm_user_assigned_identity" "containerapp_acr_identity" {
+  name                = "${local.prefix}-containerapp-acr-identity"
   resource_group_name = azurerm_resource_group.shared_rg.name
   location            = azurerm_resource_group.shared_rg.location
 }
@@ -342,14 +367,6 @@ resource "azurerm_storage_account" "func_storage" {
   shared_access_key_enabled = false
   public_network_access_enabled = false
   tags                     = local.tags
-  /*
-  network_rules {
-    default_action = "Deny"
-    # virtual_network_subnet_ids = [ azurerm_subnet.function_apps.id ]
-    # bypass = [ "AzureServices" ]
-    # ip_rules = [ ""]
-  }
-  */
 }
 
 resource "azurerm_private_endpoint" "funcapp_storage_account" {
@@ -368,6 +385,13 @@ resource "azurerm_private_endpoint" "funcapp_storage_account" {
     name = "funcapp-storage-dns-zone-group"
     private_dns_zone_ids = [ azurerm_private_dns_zone.storage_blob.id ]
   }
+}
+
+// Grant current user blob storage contributor to function app storage account
+resource "azurerm_role_assignment" "deployer_funcappstorage_blob_contributor" {
+  scope                = azurerm_storage_account.func_storage.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = data.azurerm_client_config.current.object_id
 }
 
 
@@ -424,6 +448,43 @@ resource "azurerm_private_endpoint" "cosmosdb_account" {
   private_dns_zone_group {
     name = "cosmosdb-dns-zone-group"
     private_dns_zone_ids = [ azurerm_private_dns_zone.cosmos_db.id ]
+  }
+}
+
+
+// -----------------------------------------------------------------------------
+// Document Intelligence Account
+// -----------------------------------------------------------------------------
+
+resource "azurerm_cognitive_account" "invoiceapi_docintel" {
+  name                = "${local.identifier}-docintel"
+  location            = azurerm_resource_group.shared_rg.location
+  resource_group_name = azurerm_resource_group.shared_rg.name
+  sku_name            = "S0"
+  tags                = local.tags
+  kind                = "FormRecognizer"
+  identity {
+    type = "SystemAssigned"
+  }
+  public_network_access_enabled = false
+  custom_subdomain_name = "${local.identifier}"
+}
+
+// document intelligence private endpoint
+resource "azurerm_private_endpoint" "docintel_account" {
+  name                = "${local.prefix}-docintel-pe"
+  location            = azurerm_resource_group.shared_rg.location
+  resource_group_name = azurerm_resource_group.shared_rg.name
+  subnet_id           = azurerm_subnet.services.id
+  private_service_connection {
+    name                           = "${local.prefix}-docintel-psc"
+    private_connection_resource_id = azurerm_cognitive_account.invoiceapi_docintel.id
+    subresource_names              = ["account"]
+    is_manual_connection           = false
+  }
+  private_dns_zone_group {
+    name = "docintel-dns-zone-group"
+    private_dns_zone_ids = [ azurerm_private_dns_zone.cognitive_services.id ]
   }
 }
 
@@ -530,15 +591,6 @@ resource "azapi_resource" "ai_foundry_project" {
   }
 }
 
-// assign current user as AI Foundry admin
-/*
-resource "azurerm_role_assignment" "aifoundry_admin" {
-  scope                = azapi_resource.ai_foundry.id
-  role_definition_name = "AI Foundry Admin"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
-*/
-
 // -----------------------------------------------------------------------------
 // Container Registry
 // -----------------------------------------------------------------------------
@@ -554,10 +606,7 @@ resource "azurerm_container_registry" "invoiceapi" {
   public_network_access_enabled   = false
 
   identity {
-    type = "UserAssigned"
-    identity_ids = [
-      azurerm_user_assigned_identity.invoiceapi_identity.id
-      ]
+    type = "SystemAssigned"
   }
 }
 
@@ -579,18 +628,35 @@ resource "azurerm_private_endpoint" "container_registry" {
   }
 }
 
-resource "azurerm_role_assignment" "acr_pull_role_assignment_invoiceapi" {
-  principal_id                     = azurerm_user_assigned_identity.invoiceapi_identity.principal_id
+// grant the current user ability to push images to the container registry
+resource "azurerm_role_assignment" "deployer_acr_push_role_assignment" {
+  principal_id         = data.azurerm_client_config.current.object_id
+  role_definition_name = "AcrPush"
+  scope                = azurerm_container_registry.invoiceapi.id
+}
+
+// grant the container registry pull role to the container app identity
+resource "azurerm_role_assignment" "acr_pull_role_assignment_containerapp" {
+  principal_id                     = azurerm_user_assigned_identity.containerapp_acr_identity.principal_id
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.invoiceapi.id
   skip_service_principal_aad_check = true
 }
 
+// run an az cli command to provision a repository in the container registry
+resource "null_resource" "acr_repository_setup" {
+  provisioner "local-exec" {
+    command = "az acr import --name ${azurerm_container_registry.invoiceapi.name} --source mcr.microsoft.com/mcr/hello-world:latest --image hello-world:latest"
+  }
+  depends_on = [ azurerm_container_registry.invoiceapi ]
+}
+
+
 // -----------------------------------------------------------------------------
 // Container Apps Environment
 // -----------------------------------------------------------------------------
 
-resource "azurerm_container_app_environment" "invoiceapi" {
+resource "azurerm_container_app_environment" "finance_apps" {
   name                = "${local.prefix}-containerapp-env"
   location            = azurerm_resource_group.shared_rg.location
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -602,20 +668,46 @@ resource "azurerm_container_app_environment" "invoiceapi" {
   }
 
   infrastructure_subnet_id = azurerm_subnet.container_apps.id
+  public_network_access = "Disabled"
 }
 
-resource "azurerm_container_app" "invoiceapi" {
-  name                         = "invoice-api"
-  container_app_environment_id = azurerm_container_app_environment.invoiceapi.id
+// private endpoint for container apps environment
+resource "azurerm_private_endpoint" "container_apps_environment" {
+  name                = "${local.prefix}-containerapp-env-pe"
+  location            = azurerm_resource_group.shared_rg.location
+  resource_group_name = azurerm_resource_group.shared_rg.name
+  subnet_id           = azurerm_subnet.services.id
+  depends_on = [ azurerm_private_dns_zone_virtual_network_link.container_app_dns_zone_link ]
+  private_service_connection {
+    name                           = "${local.prefix}-containerapp-env-psc"
+    private_connection_resource_id = azurerm_container_app_environment.finance_apps.id
+    subresource_names              = ["managedEnvironments"]
+    is_manual_connection           = false
+  }
+  private_dns_zone_group {
+    name = "container-apps-dns-zone-group"
+    private_dns_zone_ids = [ azurerm_private_dns_zone.container_app.id ]
+  }
+}
+
+// sample container app deployment (hello world)
+resource "azurerm_container_app" "hello_world" {
+  name                         = "hello-world"
+  container_app_environment_id = azurerm_container_app_environment.finance_apps.id
   resource_group_name          = azurerm_resource_group.shared_rg.name
   revision_mode                = "Single"
   tags = local.tags
+  depends_on = [ null_resource.acr_repository_setup, azurerm_role_assignment.acr_pull_role_assignment_containerapp ]
 
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.containerapp_acr_identity.id]
+  }
   
   template {
     container {
       name   = "examplecontainerapp"
-      image  = "mcr.microsoft.com/mcr/hello-world:latest"
+      image  = "${azurerm_container_registry.invoiceapi.login_server}/hello-world:latest"
       cpu    = 0.25
       memory = "0.5Gi"
     }
@@ -630,10 +722,6 @@ resource "azurerm_container_app" "invoiceapi" {
     */
   }
   
-  identity {
-    type = "SystemAssigned"
-  }
-
   /*
   ingress {
     allow_insecure_connections = false
@@ -646,8 +734,8 @@ resource "azurerm_container_app" "invoiceapi" {
   */
 
   registry {
-    identity  = azurerm_user_assigned_identity.invoiceapi_identity.id
-    server    = azurerm_container_registry.invoiceapi.login_server
+    identity = azurerm_user_assigned_identity.containerapp_acr_identity.id
+    server   = azurerm_container_registry.invoiceapi.login_server
   }
 
 }
@@ -657,21 +745,6 @@ resource "azurerm_container_app" "invoiceapi" {
 // Function Apps
 // -----------------------------------------------------------------------------
 
-
-// Grant MCP function app blob storage contributor
-resource "azurerm_role_assignment" "funcapp_storage_blob_contributor" {
-  scope                = azurerm_storage_account.func_storage.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.func_mcp_identity.principal_id
-}
-
-// Grant current user blob storage contributor
-resource "azurerm_role_assignment" "deployer_storage_blob_contributor" {
-  scope                = azurerm_storage_account.func_storage.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = data.azurerm_client_config.current.object_id
-}
-
 resource "azurerm_service_plan" "function_app_plan" {
   name                = "mcp-function-app-service-plan"
   resource_group_name = azurerm_resource_group.shared_rg.name
@@ -680,7 +753,7 @@ resource "azurerm_service_plan" "function_app_plan" {
   sku_name            = "EP1"
 }
 
-resource "azurerm_linux_function_app" "function_app" {
+resource "azurerm_linux_function_app" "mcp" {
   name                        = "${local.prefix}-mcp"
   resource_group_name         = azurerm_resource_group.shared_rg.name
   location                    = azurerm_resource_group.shared_rg.location
@@ -690,8 +763,7 @@ resource "azurerm_linux_function_app" "function_app" {
   # storage_account_access_key = azurerm_storage_account.func_storage.primary_access_key
 
   identity {
-    type = "UserAssigned"
-    identity_ids = [ azurerm_user_assigned_identity.func_mcp_identity.id ]
+    type = "SystemAssigned"
   }
 
   virtual_network_subnet_id = azurerm_subnet.function_apps.id
@@ -702,25 +774,16 @@ resource "azurerm_linux_function_app" "function_app" {
     application_insights_key = azurerm_application_insights.invoiceapi.instrumentation_key
     application_stack {
       python_version = "3.13"
-    }
-    
-    /*
-    ip_restriction_default_action = "Deny"
-    ip_restriction {
-      virtual_network_subnet_id = azurerm_subnet.container_apps.id
-      action     = "Allow"
-    }
-    ip_restriction {
-      virtual_network_subnet_id = azurerm_subnet.utility_vms.id
-      action = "Allow"
-    }
-    ip_restriction {
-      ip_address = "AzureCloud"
-      action     = "Allow"
-    }
-    */
+    } 
     
   }
+}
+
+// Grant MCP function app blob storage contributor
+resource "azurerm_role_assignment" "funcapp_storage_blob_contributor" {
+  scope                = azurerm_storage_account.func_storage.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_function_app.mcp.identity[0].principal_id
 }
 
 resource "azurerm_private_endpoint" "function_app" {
@@ -731,7 +794,7 @@ resource "azurerm_private_endpoint" "function_app" {
   depends_on = [ azurerm_private_dns_zone_virtual_network_link.functions_dns_zone_link ]
   private_service_connection {
     name                           = "${local.prefix}-funcapp-psc"
-    private_connection_resource_id = azurerm_linux_function_app.function_app.id
+    private_connection_resource_id = azurerm_linux_function_app.mcp.id
     subresource_names              = ["sites"]
     is_manual_connection           = false
   }
@@ -740,13 +803,6 @@ resource "azurerm_private_endpoint" "function_app" {
     private_dns_zone_ids = [ azurerm_private_dns_zone.functions.id ]
   }
 }
-
-/*
-resource "azurerm_app_service_virtual_network_swift_connection" "function_app_vnet_integration" {
-    app_service_id    = azurerm_linux_function_app.function_app.id
-    subnet_id         = azurerm_subnet.function_apps.id
-}
-*/
 
 
 // -----------------------------------------------------------------------------
