@@ -21,66 +21,9 @@ variable "project_name" {
 }
 
 variable "key_vault_id" {
-  description = "Key Vault ID for storing secrets"
+  description = "Key Vault ID for storing secrets (optional)"
   type        = string
-}
-
-variable "managed_identity_id" {
-  description = "Managed identity ID for accessing resources"
-  type        = string
-}
-
-variable "cognitive_services" {
-  description = "Configuration for Cognitive Services"
-  type = list(object({
-    name             = string
-    kind             = string # "OpenAI", "FormRecognizer", "ComputerVision", etc.
-    sku_name         = string
-    custom_subdomain = bool
-    deployments = list(object({
-      name  = string
-      model = object({
-        format  = string
-        name    = string
-        version = string
-      })
-      scale = object({
-        type     = string
-        capacity = number
-      })
-    }))
-  }))
-  default = []
-}
-
-variable "openai_deployments" {
-  description = "OpenAI model deployments"
-  type = list(object({
-    name     = string
-    model    = string
-    version  = string
-    capacity = number
-  }))
-  default = [
-    {
-      name     = "gpt-4"
-      model    = "gpt-4"
-      version  = "0613"
-      capacity = 10
-    },
-    {
-      name     = "gpt-35-turbo"
-      model    = "gpt-35-turbo"
-      version  = "0613"
-      capacity = 10
-    },
-    {
-      name     = "text-embedding-ada-002"
-      model    = "text-embedding-ada-002"
-      version  = "2"
-      capacity = 10
-    }
-  ]
+  default     = ""
 }
 
 variable "form_recognizer_enabled" {
@@ -95,16 +38,14 @@ variable "computer_vision_enabled" {
   default     = false
 }
 
-variable "private_endpoints_enabled" {
-  description = "Enable private endpoints for AI services"
-  type        = bool
-  default     = false
-}
-
-variable "subnet_id" {
-  description = "Subnet ID for private endpoints (if enabled)"
-  type        = string
-  default     = ""
+variable "private_endpoint_info" {
+  description = "Private endpoint configuration (subnet_id and dns_zone_id)"
+  type = object({
+    subnet_id    = string
+    dns_zone_id  = string
+  })
+  default = null
+  nullable = true
 }
 
 variable "network_restrictions" {
@@ -117,7 +58,7 @@ variable "network_restrictions" {
     }))
   })
   default = {
-    default_action        = "Allow"
+    default_action        = "Deny"
     ip_rules             = []
     virtual_network_rules = []
   }

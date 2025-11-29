@@ -8,23 +8,10 @@ output "service_plan_ids" {
   )
 }
 
-output "linux_function_apps" {
-  description = "Information about Linux function apps"
+output "function_apps" {
+  description = "Information about function apps"
   value = {
-    for name, app in azurerm_linux_function_app.linux_apps : name => {
-      id                    = app.id
-      name                  = app.name
-      default_hostname      = app.default_hostname
-      principal_id          = app.identity[0].principal_id
-      outbound_ip_addresses = app.outbound_ip_addresses
-    }
-  }
-}
-
-output "windows_function_apps" {
-  description = "Information about Windows function apps"
-  value = {
-    for name, app in azurerm_windows_function_app.windows_apps : name => {
+    for name, app in azurerm_linux_function_app.apps : name => {
       id                    = app.id
       name                  = app.name
       default_hostname      = app.default_hostname
@@ -36,28 +23,21 @@ output "windows_function_apps" {
 
 output "function_app_urls" {
   description = "URLs of all function apps"
-  value = merge(
-    {
-      for name, app in azurerm_linux_function_app.linux_apps :
-      name => "https://${app.default_hostname}"
-    },
-    {
-      for name, app in azurerm_windows_function_app.windows_apps :
-      name => "https://${app.default_hostname}"
-    }
-  )
+  value = {
+    for name, app in azurerm_linux_function_app.apps :
+    name => "https://${app.default_hostname}"
+  }
 }
 
 output "function_app_identities" {
   description = "Managed identities of function apps"
-  value = merge(
-    {
-      for name, app in azurerm_linux_function_app.linux_apps :
-      name => app.identity[0].principal_id
-    },
-    {
-      for name, app in azurerm_windows_function_app.windows_apps :
-      name => app.identity[0].principal_id
-    }
-  )
+  value = {
+    for name, app in azurerm_linux_function_app.apps :
+    name => app.identity[0].principal_id
+  }
+}
+
+output "private_endpoint_ids" {
+  description = "IDs of the private endpoints for function apps"
+  value       = { for k, v in azurerm_private_endpoint.function_app_pe : k => v.id }
 }

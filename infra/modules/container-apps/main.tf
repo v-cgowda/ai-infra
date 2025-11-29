@@ -5,19 +5,65 @@ resource "azurerm_container_app_environment" "main" {
   resource_group_name        = var.resource_group_name
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
+  # Container App Environment identity
+    identity {
+    type = "SystemAssigned"
+  }
+
   # Network configuration
   infrastructure_subnet_id          = var.subnet_id
   internal_load_balancer_enabled    = false
+  public_network_access             = var.public_network_access
 
   # Dapr configuration
   dapr_application_insights_connection_string = null
+
+  # Workload profile configuration
+  dynamic "workload_profile" {
+    for_each = var.workload_profiles
+    content {
+      name                  = workload_profile.value.name
+      workload_profile_type = workload_profile.value.workload_profile_type
+      maximum_count         = workload_profile.value.maximum_count
+      minimum_count         = workload_profile.value.minimum_count
+    }
+  }
   
   tags = merge(var.tags, {
     Module = "container-apps"
   })
 }
 
+# Private Endpoint for Container Apps Environment
+resource "azurerm_private_endpoint" "container_apps_environment" {
+  count               = var.private_endpoint_subnet_id != "" ? 1 : 0
+  name                = "${var.project_name}-${var.environment}-cae-pe"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = var.private_endpoint_subnet_id
+  
+  private_service_connection {
+    name                           = "${var.project_name}-${var.environment}-cae-psc"
+    private_connection_resource_id = azurerm_container_app_environment.main.id
+    subresource_names              = ["managedEnvironments"]
+    is_manual_connection           = false
+  }
+
+  dynamic "private_dns_zone_group" {
+    for_each = var.private_dns_zone_id != "" ? [1] : []
+    content {
+      name                 = "container-apps-dns-zone-group"
+      private_dns_zone_ids = [var.private_dns_zone_id]
+    }
+  }
+
+  tags = merge(var.tags, {
+    Module = "container-apps"
+  })
+}
+
 # Container Registry Secret
+/*
 resource "azurerm_container_app_environment_storage" "registry" {
   count                        = var.container_registry_id != "" ? 1 : 0
   name                         = "registry-storage"
@@ -27,6 +73,7 @@ resource "azurerm_container_app_environment_storage" "registry" {
   access_key                   = "" # Will be managed through managed identity
   access_mode                  = "ReadOnly"
 }
+*/
 
 # Container Apps
 resource "azurerm_container_app" "apps" {
@@ -38,6 +85,8 @@ resource "azurerm_container_app" "apps" {
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = var.resource_group_name
   revision_mode                = "Single"
+
+  workload_profile_name = each.value.workload_profile_name != "" ? each.value.workload_profile_name : null
 
   # Identity configuration
   identity {
@@ -112,32 +161,5 @@ resource "azurerm_container_app" "apps" {
   tags = merge(var.tags, {
     Module = "container-apps"
     App    = each.value.name
-  })
-}
-
-# Container App Jobs (for batch processing)
-resource "azurerm_container_app_job" "jobs" {
-  for_each = {} # Define jobs if needed
-
-  name                         = "${var.project_name}-${each.key}-job-${var.environment}"
-  location                     = var.location
-  resource_group_name          = var.resource_group_name
-  container_app_environment_id = azurerm_container_app_environment.main.id
-
-  replica_timeout_in_seconds = 1800
-  replica_retry_limit        = 3
-
-  template {
-    container {
-      image  = each.value.image
-      name   = each.key
-      cpu    = 0.25
-      memory = "0.5Gi"
-    }
-  }
-
-  tags = merge(var.tags, {
-    Module = "container-apps"
-    Type   = "job"
   })
 }

@@ -26,9 +26,10 @@ variable "storage_account_name" {
 }
 
 variable "storage_account_access_key" {
-  description = "Storage account access key"
+  description = "Storage account access key (optional, AzureWebJobsStorage setting only populated if specified)"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "application_insights_key" {
@@ -49,8 +50,9 @@ variable "key_vault_id" {
 }
 
 variable "managed_identity_id" {
-  description = "Managed identity ID for accessing resources"
+  description = "Managed identity ID for accessing resources (optional, defaults to SystemAssigned identity)"
   type        = string
+  default     = ""
 }
 
 variable "subnet_id" {
@@ -59,12 +61,17 @@ variable "subnet_id" {
   default     = ""
 }
 
+variable "public_access_enabled" {
+  description = "Enable public network access for Function Apps. Default is false."
+  type        = bool
+  default     = false
+}
+
 variable "function_apps" {
-  description = "Configuration for function apps"
+  description = "Configuration for Linux function apps"
   type = list(object({
     name                    = string
-    os_type                 = string # "linux" or "windows"
-    runtime_stack          = string # "python", "node", "dotnet", etc.
+    runtime_stack          = string # "python", "node", "dotnet", "java"
     runtime_version        = string
     service_plan_sku       = string # "Y1", "EP1", "P1v2", etc.
     always_on              = bool
@@ -78,11 +85,23 @@ variable "function_apps" {
 variable "consumption_plan_enabled" {
   description = "Use consumption plan for cost optimization"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+variable "private_endpoint_subnet_id" {
+  description = "Subnet ID for private endpoint (private endpoint created if specified)"
+  type        = string
+  default     = ""
+}
+
+variable "private_dns_zone_id" {
+  description = "Private DNS zone ID for function apps (privatelink.azurewebsites.net)"
+  type        = string
+  default     = ""
 }

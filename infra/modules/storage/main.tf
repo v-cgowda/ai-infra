@@ -11,10 +11,10 @@ resource "azurerm_storage_account" "main" {
   # Security settings
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
-  public_network_access_enabled   = true
+  public_network_access_enabled   = var.public_network_access_enabled
 
   # Enable advanced features
-  is_hns_enabled = true # Hierarchical namespace for Data Lake
+  is_hns_enabled = var.is_hns_enabled
 
   blob_properties {
     versioning_enabled = var.enable_versioning
@@ -34,9 +34,7 @@ resource "azurerm_storage_account" "main" {
     }
   }
 
-  tags = merge(var.tags, {
-    Module = "storage"
-  })
+  tags = var.tags
 }
 
 # Storage Containers
@@ -71,22 +69,29 @@ resource "azurerm_storage_account_network_rules" "main" {
   bypass                     = ["Metrics", "Logging", "AzureServices"]
 }
 
-# Private Endpoint for Storage Account (optional)
-resource "azurerm_private_endpoint" "storage_blob" {
-  count               = 0 # Set to 1 to enable
-  name                = "${azurerm_storage_account.main.name}-blob-pe"
+# Private Endpoints for Storage Account
+resource "azurerm_private_endpoint" "storage_resources" {
+  for_each = var.private_endpoint_subnet_id != "" ? {
+    for k, v in var.private_dns_zone_ids : k => v if v != ""
+  } : {}
+
+  name                = "${azurerm_storage_account.main.name}-${each.key}-pe"
   location            = var.location
   resource_group_name = var.resource_group_name
-  subnet_id           = "" # Add subnet ID if enabling
+  subnet_id           = var.private_endpoint_subnet_id
 
   private_service_connection {
-    name                           = "${azurerm_storage_account.main.name}-blob-psc"
+    name                           = "${azurerm_storage_account.main.name}-${each.key}-psc"
     private_connection_resource_id = azurerm_storage_account.main.id
-    subresource_names              = ["blob"]
+    subresource_names              = [each.key]
     is_manual_connection           = false
   }
 
-  tags = merge(var.tags, {
-    Module = "storage"
-  })
+  private_dns_zone_group {
+    name                 = "storage-${each.key}-dns-zone-group"
+    private_dns_zone_ids = [each.value]
+  }
+
+  tags = var.tags
+
 }

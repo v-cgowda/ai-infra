@@ -41,7 +41,7 @@ variable "container_registry_server" {
 }
 
 variable "managed_identity_id" {
-  description = "Managed identity ID for accessing resources"
+  description = "Managed identity ID for accessing resources."
   type        = string
 }
 
@@ -64,6 +64,7 @@ variable "container_apps" {
       name  = string
       value = string
     }))
+    workload_profile_name = string
   }))
   default = []
 }
@@ -72,6 +73,42 @@ variable "dapr_enabled" {
   description = "Enable Dapr for the Container Apps Environment"
   type        = bool
   default     = false
+}
+
+variable "public_network_access" {
+  description = "Public network access for Container Apps Environment (Enabled or Disabled)"
+  type        = string
+  default     = "Disabled"
+}
+
+variable "workload_profiles" {
+  description = "Workload profiles for Container Apps Environment"
+  type = list(object({
+    name                  = string
+    workload_profile_type = string
+    maximum_count         = number
+    minimum_count         = number
+  }))
+  default = [
+    {
+      name                  = "internal-small"
+      workload_profile_type = "D4"
+      maximum_count         = 10
+      minimum_count         = 1
+    }
+  ]
+}
+
+variable "private_endpoint_subnet_id" {
+  description = "Subnet ID for private endpoint (private endpoint created if specified)"
+  type        = string
+  default     = ""
+}
+
+variable "private_dns_zone_id" {
+  description = "Private DNS zone ID for Container Apps Environment"
+  type        = string
+  default     = ""
 }
 
 variable "tags" {

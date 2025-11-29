@@ -40,3 +40,8 @@ output "container_app_urls" {
     if try(app.ingress[0].external_enabled, false)
   }
 }
+
+output "private_endpoint_id" {
+  description = "ID of the private endpoint for Container Apps Environment"
+  value       = var.private_endpoint_subnet_id != "" ? azurerm_private_endpoint.container_apps_environment[0].id : null
+}

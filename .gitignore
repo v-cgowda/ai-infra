@@ -50,3 +50,7 @@ venv/
 # ignore python cache files
 __pycache__/
 *.pyc
+
+# old / ignore folders
+old
+.old

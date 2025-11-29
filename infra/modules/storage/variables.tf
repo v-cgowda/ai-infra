@@ -86,3 +86,34 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "public_network_access_enabled" {
+  description = "Enable public network access to storage account"
+  type        = bool
+  default     = true
+}
+
+variable "is_hns_enabled" {
+  description = "Enable hierarchical namespace for Data Lake"
+  type        = bool
+  default     = false
+}
+
+variable "private_endpoint_subnet_id" {
+  description = "Subnet ID for private endpoint (private endpoints created if specified)"
+  type        = string
+  default     = ""
+}
+
+variable "private_dns_zone_ids" {
+  description = "Map of private DNS zone IDs for private endpoint (blob, file, dfs, table, queue, web)"
+  type        = map(string)
+  default     = {
+    blob  = ""
+    file  = ""
+    dfs   = ""
+    table = ""
+    queue = ""
+    web   = ""
+  }
+}

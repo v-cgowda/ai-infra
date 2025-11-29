@@ -42,3 +42,8 @@ output "file_share_urls" {
     name => "${azurerm_storage_account.main.primary_file_endpoint}${share.name}"
   }
 }
+
+output "private_endpoint_ids" {
+  description = "Map of private endpoint IDs by subresource type"
+  value       = { for k, v in azurerm_private_endpoint.storage : k => v.id }
+}
