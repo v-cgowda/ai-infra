@@ -1,11 +1,3 @@
-# Data source for custom setup script
-/*
-data "template_file" "custom_data" {
-  count    = var.custom_data_template_path != "" ? 1 : 0
-  template = file(var.custom_data_template_path)
-}
-*/
-
 # Network Interface
 resource "azurerm_network_interface" "vm_nic" {
   name                = "${var.prefix}-${var.vm_name}-nic"
@@ -48,5 +40,4 @@ resource "azurerm_windows_virtual_machine" "vm" {
   }
 
   custom_data = var.custom_data != "" ? base64encode(var.custom_data) : null
-  # custom_data = var.custom_data_template_path != "" ? base64encode(data.template_file.custom_data[0].rendered) : null
 }

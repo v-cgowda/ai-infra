@@ -335,10 +335,6 @@ module "foundry" {
 # Virtual Machine Module (Utility VM)
 ##################################################
 
-data "template_file" "user_data" {
-  template = file("${path.module}/scripts/util_vm_setup.ps1")
-}
-
 module "utility_vm" {
   source                = "./modules/virtual-machines"
   resource_group_name   = azurerm_resource_group.shared_rg.name
@@ -354,7 +350,7 @@ module "utility_vm" {
   admin_username        = "azureuser"
   admin_password = var.utility_vm_admin_password
 
-  custom_data = base64encode(data.template_file.user_data.rendered)
+  custom_data = base64encode(templatefile("${path.module}/scripts/util_vm_setup.ps1", {}))
   
   tags = local.tags
 }
