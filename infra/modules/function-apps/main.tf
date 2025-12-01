@@ -1,35 +1,13 @@
 # Service Plans for Function Apps
-resource "azurerm_service_plan" "function_plans" {
-  for_each = {
-    for app in var.function_apps : app.name => app
-    if !var.consumption_plan_enabled
-  }
-
+resource "azurerm_service_plan" "app_service_plan" {
   name                = "${var.project_name}-${each.value.name}-plan-${var.environment}"
   resource_group_name = var.resource_group_name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = each.value.service_plan_sku
+  sku_name            = var.service_plan_sku
 
   tags = merge(var.tags, {
     Module = "function-apps"
-    App    = each.value.name
-  })
-}
-
-# Consumption Plan (Serverless)
-resource "azurerm_service_plan" "consumption" {
-  count = var.consumption_plan_enabled ? 1 : 0
-
-  name                = "${var.project_name}-consumption-plan-${var.environment}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  os_type             = "Linux"
-  sku_name            = "Y1"
-
-  tags = merge(var.tags, {
-    Module = "function-apps"
-    Type   = "consumption"
   })
 }
 
@@ -43,7 +21,7 @@ resource "azurerm_linux_function_app" "apps" {
   resource_group_name = var.resource_group_name
   location            = var.location
 
-  service_plan_id           = var.consumption_plan_enabled ? azurerm_service_plan.consumption[0].id : azurerm_service_plan.function_plans[each.key].id
+  service_plan_id           = azurerm_service_plan.app_service_plan.id
 
   # function app storage
   storage_account_name       = var.storage_account_name
@@ -63,7 +41,7 @@ resource "azurerm_linux_function_app" "apps" {
 
   # Site configuration
   site_config {
-    always_on = each.value.always_on && !var.consumption_plan_enabled
+    always_on = each.value.always_on
 
     application_stack {
       python_version = each.value.runtime_stack == "python" ? each.value.runtime_version : null

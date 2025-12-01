@@ -1,7 +1,7 @@
 # Microsoft Foundry (OpenAI Service with Project Management)
 resource "azapi_resource" "foundry" {
   type                      = "Microsoft.CognitiveServices/accounts@2025-06-01"
-  name                      = "${var.project_name}-foundry-${var.environment}"
+  name                      = "${var.project_identifier}-foundry-${var.environment}"
   parent_id                 = var.resource_group_id
   location                  = var.location
   schema_validation_enabled = false
@@ -68,13 +68,13 @@ resource "azapi_resource" "foundry_deployments" {
 # Private Endpoints for Foundry
 resource "azurerm_private_endpoint" "foundry" {
   count               = var.private_endpoint_subnet_id != "" ? 1 : 0
-  name                = "${var.project_name}-foundry-${var.environment}-pe"
+  name                = "${var.project_identifier}-foundry-${var.environment}-pe"
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.private_endpoint_subnet_id
 
   private_service_connection {
-    name                           = "${var.project_name}-foundry-${var.environment}-psc"
+    name                           = "${var.project_identifier}-foundry-${var.environment}-psc"
     private_connection_resource_id = azapi_resource.foundry.id
     subresource_names              = ["account"]
     is_manual_connection           = false

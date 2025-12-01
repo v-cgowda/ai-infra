@@ -20,11 +20,6 @@ variable "environment" {
   type        = string
 }
 
-variable "project_name" {
-  description = "Project name for resource naming"
-  type        = string
-}
-
 variable "project_identifier" {
   description = "Project identifier for resource naming. Should be short and alphanumeric."
   type        = string
@@ -79,7 +74,6 @@ variable "projects" {
     display_name = string
     description  = string
   }))
-  default = []
 }
 
 variable "vnet_integration_subnet_id" {

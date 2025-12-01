@@ -66,7 +66,6 @@ variable "container_apps" {
     }))
     workload_profile_name = string
   }))
-  default = []
 }
 
 variable "dapr_enabled" {

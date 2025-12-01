@@ -1,11 +1,8 @@
 # Function Apps Module Outputs
 
-output "service_plan_ids" {
+output "service_plan_id" {
   description = "IDs of the service plans"
-  value = merge(
-    { for name, plan in azurerm_service_plan.function_plans : name => plan.id },
-    var.consumption_plan_enabled ? { "consumption" = azurerm_service_plan.consumption[0].id } : {}
-  )
+  value       = azurerm_service_plan.app_service_plan.id
 }
 
 output "function_apps" {

@@ -20,6 +20,12 @@ variable "project_name" {
   type        = string
 }
 
+variable "service_plan_sku" {
+  description = "SKU for the service plan"
+  type        = string
+  default     = "EP1"
+}
+
 variable "storage_account_name" {
   description = "Storage account name for Function App"
   type        = string
@@ -80,12 +86,6 @@ variable "function_apps" {
     enable_vnet_integration = bool
   }))
   default = []
-}
-
-variable "consumption_plan_enabled" {
-  description = "Use consumption plan for cost optimization"
-  type        = bool
-  default     = false
 }
 
 variable "tags" {

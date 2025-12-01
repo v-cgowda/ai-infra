@@ -51,7 +51,7 @@ variable "managed_identities" {
       description = "Identity for function app to access other resources"
     },
     {
-      name        = "containerapp-acr-identity"
+      name        = "containerapp-identity"
       description = "Identity for container app to pull images from ACR"
     },
     {

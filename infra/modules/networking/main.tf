@@ -48,7 +48,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg_association" {
 
 # Private DNS Zones
 resource "azurerm_private_dns_zone" "zones" {
-  for_each = var.enable_private_dns_zones ? { for zone in var.private_dns_zones : zone.name => zone } : {}
+  for_each = var.enable_private_dns_zones ? { for zone in local.private_dns_zones : zone.name => zone if contains(var.private_dns_zone_names, zone.name) } : {}
   
   name                = each.value.zone_name
   resource_group_name = var.resource_group_name
@@ -56,7 +56,7 @@ resource "azurerm_private_dns_zone" "zones" {
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "zone_links" {
-  for_each = var.enable_private_dns_zones ? { for zone in var.private_dns_zones : zone.name => zone } : {}
+  for_each = var.enable_private_dns_zones ? { for zone in local.private_dns_zones : zone.name => zone if contains(var.private_dns_zone_names, zone.name) } : {}
   
   name                  = "${each.value.name}-dns-zone-link"
   resource_group_name   = var.resource_group_name
