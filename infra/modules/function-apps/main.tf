@@ -17,7 +17,7 @@ resource "azurerm_linux_function_app" "apps" {
     for idx, app in var.function_apps : tostring(idx) => app
   }
 
-  name                = "${var.project_name}-${each.value.name}-func-${var.environment}"
+  name                = "${each.value.name}-${var.environment}"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -138,6 +138,9 @@ resource "azurerm_private_endpoint" "function_app_pe" {
   })
 }
 
+/*
+# To be considered at a future point: Source Control for Function Apps
+
 resource "azurerm_app_service_source_control" "function_app_source_control" {
   for_each = {
     for idx, app in var.function_apps : tostring(idx) => app
@@ -147,6 +150,8 @@ resource "azurerm_app_service_source_control" "function_app_source_control" {
   app_id            = azurerm_linux_function_app.apps[each.key].id
   repo_url         = each.value.source_control.repo_url
   branch           = each.value.source_control.branch
+  provider = ""
   use_manual_integration = each.value.source_control.use_manual_integration
   rollback_enabled = each.value.source_control.rollback_enabled
 }
+*/

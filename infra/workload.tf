@@ -321,12 +321,6 @@ module "function_apps" {
       app_settings           = {}
       connection_strings     = {}
       enable_vnet_integration = true
-      source_control = {
-        repo_url               = var.function_app_source_control_url
-        branch                 = "main"
-        use_manual_integration = false
-        rollback_enabled       = false
-      }
     }
   ]
 }
@@ -489,13 +483,42 @@ resource "azurerm_role_assignment" "acr_pull_containerapp_identity" {
 
 
 ##################################################
-# Scripts
+# Script - run an az cli command to provision a repository in the container registry
 ##################################################
 
-// run an az cli command to provision a repository in the container registry
 resource "terraform_data" "acr_repository_provision_hello_world_api" {
   provisioner "local-exec" {
     command = "az acr import --name ${module.container_registry.name} --source docker.io/trniel/hello-world-api:latest --image hello-world-api:latest || echo 'Image already exists, skipping import'"
   }
   depends_on = [ module.container_registry ]
 }
+
+
+##################################################
+# Script - deploy code to function app from local directory
+################################################## 
+
+# Public IP access is required for function app deployment
+
+/*
+resource "archive_file" "function_app_code" {
+  type        = "zip"
+  source_dir  = "${path.module}/../function-app"
+  output_path = "${path.module}/function-app.zip"
+}
+
+resource "terraform_data" "function_app_deploy_code" {
+  provisioner "local-exec" {
+    command = <<EOT
+      az functionapp deployment source config-zip \
+        --resource-group ${azurerm_resource_group.shared_rg.name} \
+        --name ${module.function_apps.function_apps[0].name} \
+        --src ${path.module}/function-app.zip
+    EOT
+  }
+  triggers_replace = {
+    code_hash = archive_file.function_app_code.output_base64sha256
+  }
+  depends_on = [ module.function_apps, archive_file.function_app_code]
+}
+*/

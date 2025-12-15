@@ -54,3 +54,6 @@ __pycache__/
 # old / ignore folders
 old
 .old
+
+# Funcation App source code (zip files)
+*.zip
