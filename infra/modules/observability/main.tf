@@ -16,4 +16,8 @@ resource "azurerm_application_insights" "app_insights" {
   workspace_id        = azurerm_log_analytics_workspace.la_workspace.id
   application_type    = "web"
   tags                = var.tags
+  
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }

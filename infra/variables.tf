@@ -3,6 +3,11 @@ variable "subscription_id" {
   description = "Azure Subscription ID to deploy environment into."
 }
 
+variable "resource_group_name" {
+  type        = string
+  description = "Name of existing resource group to deploy resources into."
+}
+
 variable "region" {
   type    = string
   default = "westus3"

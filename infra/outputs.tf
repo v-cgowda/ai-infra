@@ -3,12 +3,12 @@
 # General Outputs
 output "resource_group_name" {
   description = "Name of the resource group"
-  value       = azurerm_resource_group.shared_rg.name
+  value       = data.azurerm_resource_group.shared_rg.name
 }
 
 output "resource_group_location" {
   description = "Location of the resource group"
-  value       = azurerm_resource_group.shared_rg.location
+  value       = data.azurerm_resource_group.shared_rg.location
 }
 
 # Networking Outputs

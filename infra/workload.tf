@@ -6,9 +6,15 @@
 
 module "networking" {
   source              = "./modules/networking"
+<<<<<<< HEAD
   prefix              = local.identifier
   resource_group_name = azurerm_resource_group.shared_rg.name
   location            = azurerm_resource_group.shared_rg.location
+=======
+  prefix              = local.prefix
+  resource_group_name = data.azurerm_resource_group.shared_rg.name
+  location            = data.azurerm_resource_group.shared_rg.location
+>>>>>>> 624e055 (local code changes)
   cidr                = var.cidr
   tags                = local.tags
   
@@ -80,9 +86,15 @@ module "networking" {
 
 module "observability" {
   source = "./modules/observability"
+<<<<<<< HEAD
   prefix              = local.identifier
   resource_group_name = azurerm_resource_group.shared_rg.name
   location            = azurerm_resource_group.shared_rg.location
+=======
+  prefix              = local.prefix
+  resource_group_name = data.azurerm_resource_group.shared_rg.name
+  location            = data.azurerm_resource_group.shared_rg.location
+>>>>>>> 624e055 (local code changes)
   tags                = local.tags
 }
 
@@ -93,9 +105,15 @@ module "observability" {
 
 module "security" {
   source                 = "./modules/security"
+<<<<<<< HEAD
   prefix                 = local.identifier
   resource_group_name    = azurerm_resource_group.shared_rg.name
   location               = azurerm_resource_group.shared_rg.location
+=======
+  prefix                 = local.prefix
+  resource_group_name    = data.azurerm_resource_group.shared_rg.name
+  location               = data.azurerm_resource_group.shared_rg.location
+>>>>>>> 624e055 (local code changes)
   tenant_id              = data.azurerm_client_config.current.tenant_id
   current_user_object_id = data.azurerm_client_config.current.object_id
   subnet_id              = module.networking.subnet_ids["services"]
@@ -117,8 +135,8 @@ module "security" {
 
 module "container_registry" {
     source                        = "./modules/container-registry"
-    resource_group_name           = azurerm_resource_group.shared_rg.name
-    location                      = azurerm_resource_group.shared_rg.location
+    resource_group_name           = data.azurerm_resource_group.shared_rg.name
+    location                      = data.azurerm_resource_group.shared_rg.location
     sku                           = "Premium"
     environment                   = "demo"
     project_name                  = local.identifier
@@ -140,8 +158,8 @@ module "container_registry" {
 module "github_runner" {
   source                        = "./modules/github-runner"
   prefix                        = local.prefix
-  resource_group_name           = azurerm_resource_group.shared_rg.name
-  location                      = azurerm_resource_group.shared_rg.location
+  resource_group_name           = data.azurerm_resource_group.shared_rg.name
+  location                      = data.azurerm_resource_group.shared_rg.location
   subnet_id                     = module.networking.subnet_ids["utility"]
   managed_identity_id           = module.security.managed_identity_ids["github-runner-identity"]
   managed_identity_principal_id = module.security.managed_identity_principal_ids["github-runner-identity"]
@@ -161,8 +179,8 @@ module "github_runner" {
 
 module "app_storage" {
   source                = "./modules/storage"
-  resource_group_name   = azurerm_resource_group.shared_rg.name
-  location              = azurerm_resource_group.shared_rg.location
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  location              = data.azurerm_resource_group.shared_rg.location
   environment           = "demo"
   project_name          = local.identifier
   
@@ -204,8 +222,8 @@ module "app_storage" {
 
 module "funcapp_storage" {
   source                = "./modules/storage"
-  resource_group_name   = azurerm_resource_group.shared_rg.name
-  location              = azurerm_resource_group.shared_rg.location
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  location              = data.azurerm_resource_group.shared_rg.location
   environment           = "demo"
   project_name          = "${local.identifier}funcapp"
   
@@ -233,8 +251,8 @@ module "funcapp_storage" {
 
 module "container_apps" {
   source                = "./modules/container-apps"
-  resource_group_name   = azurerm_resource_group.shared_rg.name
-  location              = azurerm_resource_group.shared_rg.location
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  location              = data.azurerm_resource_group.shared_rg.location
   environment           = "dev"
   project_name          = local.identifier
   depends_on            = [ terraform_data.acr_repository_provision_hello_world_api ]
@@ -291,8 +309,8 @@ module "container_apps" {
 
 module "function_apps" {
   source                = "./modules/function-apps"
-  resource_group_name   = azurerm_resource_group.shared_rg.name
-  location              = azurerm_resource_group.shared_rg.location
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  location              = data.azurerm_resource_group.shared_rg.location
   environment           = "demo"
   project_name          = local.identifier
   service_plan_sku      = "EP1"
@@ -332,8 +350,8 @@ module "function_apps" {
 
 module "ai_services" {
   source                = "./modules/ai-services"
-  resource_group_name   = azurerm_resource_group.shared_rg.name
-  location              = azurerm_resource_group.shared_rg.location
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  location              = data.azurerm_resource_group.shared_rg.location
   environment           = "demo"
   project_name          = local.identifier
   
@@ -356,8 +374,8 @@ module "ai_services" {
 
 module "foundry" {
   source                = "./modules/foundry"
-  resource_group_name   = azurerm_resource_group.shared_rg.name
-  resource_group_id     = azurerm_resource_group.shared_rg.id
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  resource_group_id     = data.azurerm_resource_group.shared_rg.id
   location              = var.region_aifoundry
   subdomain_name        = local.identifier
   environment           = "demo"
@@ -423,10 +441,17 @@ module "foundry" {
 
 module "utility_vm" {
   source                = "./modules/virtual-machines"
+<<<<<<< HEAD
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
   prefix                = local.identifier
   computer_name         = "${local.identifier}-util"
+=======
+  resource_group_name   = data.azurerm_resource_group.shared_rg.name
+  location              = data.azurerm_resource_group.shared_rg.location
+  prefix = local.prefix
+  computer_name         = "${local.prefix}-util"
+>>>>>>> 624e055 (local code changes)
   
   # Networking
   subnet_id             = module.networking.subnet_ids["utility"]
