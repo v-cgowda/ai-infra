@@ -1,5 +1,5 @@
 # Log Analytics Workspace
-resource "azurerm_log_analytics_workspace" "invoiceapi" {
+resource "azurerm_log_analytics_workspace" "la_workspace" {
   name                = "${var.prefix}-law"
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -9,11 +9,11 @@ resource "azurerm_log_analytics_workspace" "invoiceapi" {
 }
 
 # Application Insights
-resource "azurerm_application_insights" "invoiceapi" {
+resource "azurerm_application_insights" "app_insights" {
   name                = "${var.prefix}-ai"
   resource_group_name = var.resource_group_name
   location            = var.location
-  workspace_id        = azurerm_log_analytics_workspace.invoiceapi.id
+  workspace_id        = azurerm_log_analytics_workspace.la_workspace.id
   application_type    = "web"
   tags                = var.tags
 }
