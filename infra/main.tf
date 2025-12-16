@@ -35,8 +35,7 @@ locals {
 }
 
 # Resource Group
-resource "azurerm_resource_group" "shared_rg" {
-  name     = "demo-${local.identifier}-shared"
-  location = var.region
-  tags     = local.tags
+# Use existing Resource Group (data source)
+data "azurerm_resource_group" "shared_rg" {
+  name = var.resource_group_name
 }
