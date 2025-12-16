@@ -87,3 +87,15 @@ variable "custom_data" {
   type        = string
   default     = ""
 }
+
+variable "setup_script" {
+  description = "PowerShell script content to execute on VM startup using Custom Script Extension (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "setup_script_name" {
+  description = "Name for the setup script file"
+  type        = string
+  default     = "setup.ps1"
+}

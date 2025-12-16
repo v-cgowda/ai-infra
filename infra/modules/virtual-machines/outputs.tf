@@ -17,3 +17,8 @@ output "network_interface_id" {
   description = "ID of the network interface"
   value       = azurerm_network_interface.vm_nic.id
 }
+
+output "setup_script_extension_id" {
+  description = "ID of the Custom Script Extension (if created)"
+  value       = length(azurerm_virtual_machine_extension.setup_script) > 0 ? azurerm_virtual_machine_extension.setup_script[0].id : null
+}

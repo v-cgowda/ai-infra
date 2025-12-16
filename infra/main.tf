@@ -26,7 +26,6 @@ resource "random_string" "alpha_prefix" {
 # Local values with alphabetic prefix
 locals {
   identifier = "${random_string.alpha_prefix.result}${random_string.naming.result}"
-  prefix     = "${random_string.alpha_prefix.result}${random_string.naming.result}"
   tags = {
     Environment     = "Demo"
     Owner          = lookup(data.external.me.result, "name")
@@ -37,7 +36,7 @@ locals {
 
 # Resource Group
 resource "azurerm_resource_group" "shared_rg" {
-  name     = "${local.prefix}-shared-rg"
+  name     = "demo-${local.identifier}-shared"
   location = var.region
   tags     = local.tags
 }

@@ -6,7 +6,7 @@
 
 module "networking" {
   source              = "./modules/networking"
-  prefix              = local.prefix
+  prefix              = local.identifier
   resource_group_name = azurerm_resource_group.shared_rg.name
   location            = azurerm_resource_group.shared_rg.location
   cidr                = var.cidr
@@ -80,7 +80,7 @@ module "networking" {
 
 module "observability" {
   source = "./modules/observability"
-  prefix              = local.prefix
+  prefix              = local.identifier
   resource_group_name = azurerm_resource_group.shared_rg.name
   location            = azurerm_resource_group.shared_rg.location
   tags                = local.tags
@@ -93,7 +93,7 @@ module "observability" {
 
 module "security" {
   source                 = "./modules/security"
-  prefix                 = local.prefix
+  prefix                 = local.identifier
   resource_group_name    = azurerm_resource_group.shared_rg.name
   location               = azurerm_resource_group.shared_rg.location
   tenant_id              = data.azurerm_client_config.current.tenant_id
@@ -121,7 +121,7 @@ module "container_registry" {
     location                      = azurerm_resource_group.shared_rg.location
     sku                           = "Premium"
     environment                   = "demo"
-    project_name                  = local.prefix
+    project_name                  = local.identifier
     public_network_access_enabled = false
     anonymous_pull_enabled        = false
     enable_private_endpoints = true
@@ -164,7 +164,7 @@ module "app_storage" {
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
   environment           = "demo"
-  project_name          = local.prefix
+  project_name          = local.identifier
   
   # Storage configuration
   storage_account_tier          = "Standard"
@@ -207,7 +207,7 @@ module "funcapp_storage" {
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
   environment           = "demo"
-  project_name          = "${local.prefix}funcapp"
+  project_name          = "${local.identifier}funcapp"
   
   # Storage configuration
   storage_account_tier          = "Standard"
@@ -236,7 +236,7 @@ module "container_apps" {
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
   environment           = "dev"
-  project_name          = local.prefix
+  project_name          = local.identifier
   depends_on            = [ terraform_data.acr_repository_provision_hello_world_api ]
   tags = local.tags
   
@@ -286,7 +286,7 @@ module "container_apps" {
 
 
 ##################################################
-# Function Apps Module
+# Function Apps
 ##################################################
 
 module "function_apps" {
@@ -294,7 +294,7 @@ module "function_apps" {
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
   environment           = "demo"
-  project_name          = local.prefix
+  project_name          = local.identifier
   service_plan_sku      = "EP1"
   tags = local.tags
   
@@ -303,7 +303,7 @@ module "function_apps" {
   application_insights_key                  = module.observability.application_insights_instrumentation_key
   application_insights_connection_string    = module.observability.application_insights_connection_string
   key_vault_id                              = module.security.key_vault_id
-  managed_identity_id                       = module.security.managed_identity_ids["funcapp-identity"]
+  enable_system_assigned_identity           = true
   subnet_id                                 = module.networking.subnet_ids["functionapps"]
   
   # Private endpoint configuration
@@ -314,7 +314,7 @@ module "function_apps" {
   # Function apps configuration (empty for now)
   function_apps            = [
     {
-      name                   = "${local.prefix}-function-app"
+      name                   = "${local.identifier}-echo"
       runtime_stack          = "python" # "python", "node", "dotnet", "java"
       runtime_version        = "3.13"
       always_on              = true
@@ -335,7 +335,7 @@ module "ai_services" {
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
   environment           = "demo"
-  project_name          = local.prefix
+  project_name          = local.identifier
   
   form_recognizer_enabled    = true
   computer_vision_enabled    = false
@@ -359,7 +359,7 @@ module "foundry" {
   resource_group_name   = azurerm_resource_group.shared_rg.name
   resource_group_id     = azurerm_resource_group.shared_rg.id
   location              = var.region_aifoundry
-  subdomain_name        = local.prefix
+  subdomain_name        = local.identifier
   environment           = "demo"
   tags                  = local.tags
 
@@ -425,8 +425,8 @@ module "utility_vm" {
   source                = "./modules/virtual-machines"
   resource_group_name   = azurerm_resource_group.shared_rg.name
   location              = azurerm_resource_group.shared_rg.location
-  prefix = local.prefix
-  computer_name         = "${local.prefix}-util"
+  prefix                = local.identifier
+  computer_name         = "${local.identifier}-util"
   
   # Networking
   subnet_id             = module.networking.subnet_ids["utility"]
@@ -434,13 +434,36 @@ module "utility_vm" {
   # VM Configuration
   vm_size               = "Standard_D4s_v3"
   admin_username        = "azureuser"
-  admin_password = var.utility_vm_admin_password
+  admin_password        = var.utility_vm_admin_password
 
-  custom_data = base64encode(templatefile("${path.module}/scripts/util_vm_setup.ps1", {}))
+  # Pass the script content to be executed via Custom Script Extension
+  # work in progress - commented out for now
+  # setup_script          = templatefile("${path.module}/scripts/util_vm_setup.ps1", {})
+  # setup_script_name     = "util_vm_setup.ps1"
   
   tags = local.tags
 }
 
+
+##################################################
+# Azure Bastion
+##################################################
+
+module "bastion" {
+  source                  = "./modules/bastion"
+  prefix                  = local.identifier
+  resource_group_name     = azurerm_resource_group.shared_rg.name
+  location                = azurerm_resource_group.shared_rg.location
+  virtual_network_name    = module.networking.virtual_network_name
+  subnet_address_prefix   = cidrsubnet(var.cidr, 10, 2) # 10.0.0.128/26 for bastion (10.0.0.128 - 10.0.0.191)
+  sku                     = "Basic" # "Basic", "Standard", "Developer"
+  copy_paste_enabled      = true
+  enable_tunneling        = true
+  enable_ip_connect       = true
+  enable_shareable_link   = true
+  enable_file_copy        = true
+  tags                    = local.tags
+}
 
 ##################################################
 # Permissions
@@ -453,11 +476,11 @@ resource "azurerm_role_assignment" "storage_blob_contributor" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-// add the Function App managed identiy as blob storage contributor to the Function App storage account
+// add the System Assigned managed identity for the first Function App blob storage contributor to its storage account
 resource "azurerm_role_assignment" "funcapp_storage_blob_contributor" {
   scope                = module.funcapp_storage.storage_account_id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = module.security.managed_identity_principal_ids["funcapp-identity"]
+  principal_id         = module.function_apps.function_app_identities["0"]
 }
 
 // grant the current user ability to push images to the container registry

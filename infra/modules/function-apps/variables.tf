@@ -41,6 +41,18 @@ variable "storage_account_access_key" {
   default     = ""
 }
 
+variable "enable_system_assigned_identity" {
+  description = "Enable System Assigned Managed Identity. If false, will use User Assigned Identity if managed_identity_id is provided."
+  type        = bool
+  default     = true
+}
+
+variable "managed_identity_id" {
+  description = "Managed identity ID for accessing resources (optional, used when enable_system_assigned_identity is false)"
+  type        = string
+  default     = ""
+}
+
 variable "application_insights_key" {
   description = "Application Insights instrumentation key"
   type        = string
@@ -56,12 +68,6 @@ variable "application_insights_connection_string" {
 variable "key_vault_id" {
   description = "Key Vault ID for storing secrets"
   type        = string
-}
-
-variable "managed_identity_id" {
-  description = "Managed identity ID for accessing resources (optional, defaults to SystemAssigned identity)"
-  type        = string
-  default     = ""
 }
 
 variable "subnet_id" {

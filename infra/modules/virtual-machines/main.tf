@@ -41,3 +41,24 @@ resource "azurerm_windows_virtual_machine" "vm" {
 
   custom_data = var.custom_data != "" ? base64encode(var.custom_data) : null
 }
+
+# Custom Script Extension - executes PowerShell script on VM startup
+resource "azurerm_virtual_machine_extension" "setup_script" {
+  count                = var.setup_script != "" ? 1 : 0
+  name                 = "setup-script"
+  virtual_machine_id   = azurerm_windows_virtual_machine.vm.id
+  publisher            = "Microsoft.Compute"
+  type                 = "CustomScriptExtension"
+  type_handler_version = "1.10"
+  auto_upgrade_minor_version = true
+  tags                 = var.tags
+
+  protected_settings = jsonencode({
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File ${var.setup_script_name}"
+    script          = base64encode(var.setup_script)
+  })
+
+  depends_on = [
+    azurerm_windows_virtual_machine.vm
+  ]
+}

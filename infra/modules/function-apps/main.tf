@@ -17,7 +17,7 @@ resource "azurerm_linux_function_app" "apps" {
     for idx, app in var.function_apps : tostring(idx) => app
   }
 
-  name                = "${each.value.name}-${var.environment}"
+  name                = "${each.value.name}"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -31,8 +31,8 @@ resource "azurerm_linux_function_app" "apps" {
 
   # Identity configuration
   identity {
-    type         = var.managed_identity_id != "" ? "UserAssigned" : "SystemAssigned"
-    identity_ids = var.managed_identity_id != "" ? [var.managed_identity_id] : null
+    type         = var.enable_system_assigned_identity ? "SystemAssigned" : (var.managed_identity_id != "" ? "UserAssigned" : "SystemAssigned")
+    identity_ids = var.enable_system_assigned_identity ? null : (var.managed_identity_id != "" ? [var.managed_identity_id] : null)
   }
 
   # networking

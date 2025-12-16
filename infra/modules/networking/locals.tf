@@ -22,7 +22,7 @@ locals {
         },
         {
             name         = "container_apps"
-            zone_name    = "privatelink.azurecontainerapps.io"
+            zone_name    = "privatelink.${var.location}.azurecontainerapps.io"
             description  = "Private DNS zone for Container Apps"
         },
         {

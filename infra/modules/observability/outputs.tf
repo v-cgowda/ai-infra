@@ -1,31 +1,31 @@
 output "log_analytics_workspace_id" {
   description = "ID of the Log Analytics workspace"
-  value       = azurerm_log_analytics_workspace.invoiceapi.id
+  value       = azurerm_log_analytics_workspace.la_workspace.id
 }
 
 output "log_analytics_workspace_name" {
   description = "Name of the Log Analytics workspace"
-  value       = azurerm_log_analytics_workspace.invoiceapi.name
+  value       = azurerm_log_analytics_workspace.la_workspace.name
 }
 
 output "application_insights_id" {
   description = "Resource ID of the Application Insights instance"
-  value       = azurerm_application_insights.invoiceapi.id
+  value       = azurerm_application_insights.app_insights.id
 }
 
 output "application_insights_name" {
   description = "Name of the Application Insights instance"
-  value       = azurerm_application_insights.invoiceapi.name
+  value       = azurerm_application_insights.app_insights.name
 }
 
 output "application_insights_instrumentation_key" {
   description = "Instrumentation key for Application Insights"
-  value       = azurerm_application_insights.invoiceapi.instrumentation_key
+  value       = azurerm_application_insights.app_insights.instrumentation_key
   sensitive   = true
 }
 
 output "application_insights_connection_string" {
   description = "Connection string for Application Insights"
-  value       = azurerm_application_insights.invoiceapi.connection_string
+  value       = azurerm_application_insights.app_insights.connection_string
   sensitive   = true
 }
