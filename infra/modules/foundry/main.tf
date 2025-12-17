@@ -30,6 +30,7 @@ resource "azapi_resource" "foundry" {
       allowProjectManagement = true
       customSubDomainName    = var.subdomain_name
       publicNetworkAccess    = var.public_network_access
+      restore                = true
 
       # see: https://github.com/microsoft/CAIRA/blob/4b942277f04ff0635496879c5eb05a0e8d547a2d/modules/ai_foundry/main.tf#L36
       networkAcls =  var.foundry_subnet_id != null ? {
